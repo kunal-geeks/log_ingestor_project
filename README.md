@@ -20,13 +20,13 @@ This project implements a log ingestor system and a query interface for handling
 1. Clone the repository:
 
    ```bash
-   git clone https://github.com/dyte-submissions/november-2023-hiring-kunal-geeks.git
+   git clone https://github.com/kunal-geeks/log_ingestor_project.git
    ```
 
 2. Navigate to the project directory:
 
    ```bash
-   cd november-2023-hiring-kunal-geeks
+   cd log_ingestor_project
    ```
 3. Install dependencies:
 
