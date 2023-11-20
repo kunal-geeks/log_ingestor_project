@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Log Query Interface</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css">
+</head>
+
+<body class="font-sans bg-gray-100 p-8">
+    <div class="container mx-auto bg-white p-8 rounded-md shadow-md">
+        <div class="flex justify-between items-center mb-8">
+            <div>
+                <h1 class="text-3xl font-semibold">Log Query Interface</h1>
+            </div>
+            <div class="flex items-center space-x-4">
+                <span class="text-gray-600">Welcome, {{ session.username }}</span>
+                <a href="/logout" class="text-blue-500 hover:underline">Logout</a>
+            </div>
+        </div>
+
+        <!-- Filter Options -->
+        <div id="filterOptionsContainer" class="grid grid-cols-2 gap-4 mb-4">
+            <!-- Filter By Dropdown -->
+            <div>
+                <label class="block text-gray-700 text-sm font-bold">Filter By:</label>
+                <select class="border rounded py-2 px-3 w-full">
+                    <option value="level">Level</option>
+                    <option value="message">Message</option>
+                    <option value="resourceId">Resource ID</option>
+                    <option value="traceId">Trace ID</option>
+                    <option value="spanId">Span ID</option>
+                    <option value="commit">Commit</option>
+                    <option value="metadata.parentResourceId">Parent Resource ID</option>
+                </select>
+            </div>
+
+            <!-- Filter Value Input -->
+            <div>
+                <label class="block text-gray-700 text-sm font-bold">Filter Value:</label>
+                <input type="text" class="border rounded py-2 px-3 w-full">
+            </div>
+        </div>
+
+        <!-- Additional Filter Options -->
+        <div id="additionalFilterOptions" class="mb-4"></div>
+        <p class="text-gray-600 text-sm mb-4">Enter dates in the format YYYY-MM-DD. For example: 2023-11-20</p>
+        <!-- Date Range -->
+        <div class="grid grid-cols-2 gap-4 mb-4">
+            <div>
+                <label class="block text-gray-700 text-sm font-bold">Start Date:</label>
+                <input type="text" id="start_date" class="border rounded py-2 px-3 w-full" placeholder="Start Date">
+            </div>
+            <div>
+                <label class="block text-gray-700 text-sm font-bold">End Date:</label>
+                <input type="text" id="end_date" class="border rounded py-2 px-3 w-full" placeholder="End Date">
+            </div>
+        </div>
+
+        <!-- Add Filter Button -->
+        <button id="addFilterButton" class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded">
+            Add Filter
+        </button>
+
+        <!-- Remove Filter Button -->
+        <button id="removeFilterButton" class="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded">
+            Remove Filter
+        </button>
+
+        <!-- Search Button -->
+        <button id="searchButton" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+            Search
+        </button>
+    </div>
+    <!-- Total Number of Logs -->
+    <div id="totalLogs" class="text-center mb-4"></div>
+
+    <!-- Result Container -->
+    <div id="resultContainer" class="container mx-auto bg-white p-8 rounded-md shadow-md">
+        <!-- Log Cards -->
+    </div>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const filterOptionsContainer = document.getElementById('filterOptionsContainer');
+            const additionalFilterOptions = document.getElementById('additionalFilterOptions');
+            const addFilterButton = document.getElementById('addFilterButton');
+            const removeFilterButton = document.getElementById('removeFilterButton');
+            const searchButton = document.getElementById('searchButton');
+            let filterIndex = 2; // Starting index for additional filter sets
+        
+            // Function to create a new filter set
+            function createFilterSet() {
+                const filterSet = document.createElement('div');
+                filterSet.className = 'grid grid-cols-2 gap-4 mb-4';
+        
+                // Filter By Dropdown
+                const filterByDiv = document.createElement('div');
+                const filterByLabel = document.createElement('label');
+                filterByLabel.className = 'block text-gray-700 text-sm font-bold';
+                filterByLabel.textContent = 'Filter By:';
+                filterByDiv.appendChild(filterByLabel);
+        
+                const filterByDropdown = document.createElement('select');
+                filterByDropdown.className = 'border rounded py-2 px-3 w-full';
+                filterOptionsContainer.querySelectorAll('option').forEach(option => {
+                    filterByDropdown.appendChild(option.cloneNode(true)); // Clone options
+                });
+                filterByDiv.appendChild(filterByDropdown);
+        
+                filterSet.appendChild(filterByDiv);
+        
+                // Filter Value Input
+                const filterValueDiv = document.createElement('div');
+                const filterValueLabel = document.createElement('label');
+                filterValueLabel.className = 'block text-gray-700 text-sm font-bold';
+                filterValueLabel.textContent = 'Filter Value:';
+                filterValueDiv.appendChild(filterValueLabel);
+        
+                const filterValueInput = document.createElement('input');
+                filterValueInput.type = 'text';
+                filterValueInput.className = 'border rounded py-2 px-3 w-full';
+                filterValueDiv.appendChild(filterValueInput);
+        
+                filterSet.appendChild(filterValueDiv);
+        
+                // Add the new filter set to the additional filter options
+                additionalFilterOptions.appendChild(filterSet);
+            }
+        
+            // Event listener for adding a filter
+            addFilterButton.addEventListener('click', function () {
+                createFilterSet();
+                filterIndex++;
+            });
+        
+            // Event listener for removing a filter
+            removeFilterButton.addEventListener('click', function () {
+                if (filterIndex > 1) {
+                    additionalFilterOptions.removeChild(additionalFilterOptions.lastChild);
+                    filterIndex--;
+                }
+            });
+        
+            // Event listener for search button
+            searchButton.addEventListener('click', function () {
+                const filterSets = [filterOptionsContainer, ...additionalFilterOptions.children];
+                const filters = [];
+        
+                filterSets.forEach(filterSet => {
+                    const filterBy = filterSet.querySelector('select').value;
+                    const filterValue = filterSet.querySelector('input').value;
+        
+                    if (filterBy && filterValue) {
+                        filters.push(`${filterBy}=${filterValue}`);
+                    }
+                });
+        
+                const startDate = document.getElementById('start_date').value;
+                const endDate = document.getElementById('end_date').value;
+        
+                let apiUrl = `/search-logs?${filters.join('&')}`;
+                if (startDate && endDate) {
+                    apiUrl += `&start_date=${encodeURIComponent(startDate)}&end_date=${encodeURIComponent(endDate)}`;
+                }
+        
+                fetch(apiUrl)
+                    .then(response => response.json())
+                    .then(data => {
+                        // Display total number of logs
+                        const totalLogs = document.getElementById('totalLogs');
+                        totalLogs.textContent = `Total Logs: ${data.logs.length}`;
+
+                        // Display results as log cards
+                        const resultContainer = document.getElementById('resultContainer');
+                        resultContainer.innerHTML = ''; // Clear previous results
+
+                        if (data.logs.length > 0) {
+                            data.logs.forEach(log => {
+                                // Create log card
+                                const logCard = document.createElement('div');
+                                logCard.className = 'bg-gray-200 p-4 mb-4 rounded-md';
+                                logCard.innerHTML = `
+                                    <p><strong>Level:</strong> ${log.level}</p>
+                                    <p><strong>Message:</strong> ${log.message}</p>
+                                    <p><strong>Resource ID:</strong> ${log.resourceId}</p>
+                                    <p><strong>Timestamp:</strong> ${log.timestamp}</p>
+                                    <p><strong>Trace ID:</strong> ${log.traceId}</p>
+                                    <p><strong>Span ID:</strong> ${log.spanId}</p>
+                                    <p><strong>Commit:</strong> ${log.commit}</p>
+                                    <p><strong>Parent Resource ID:</strong> ${log.metadata.parentResourceId}</p>
+                                `;
+                                resultContainer.appendChild(logCard);
+                            });
+                        } else {
+                            // No results message
+                            resultContainer.textContent = 'No results found.';
+                        }
+                    })
+                    .catch(error => console.error('Error:', error));
+            });
+        });
+    </script>
+</body>
+
+</html>
