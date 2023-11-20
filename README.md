@@ -2,7 +2,7 @@
 
 ## Overview
 
-This project implements a log ingestor system and a query interface for handling log data efficiently. The system is built using Flask for the log ingestor, MongoDB Atlas for storage, and includes a sample data populator and query tester.
+This project implements a log ingestor system and a query interface for handling log data efficiently. The system is built using Flask for the log ingestor, MongoDB Atlas for storage, and includes a sample data populator.
 
 ## Prerequisites
 
